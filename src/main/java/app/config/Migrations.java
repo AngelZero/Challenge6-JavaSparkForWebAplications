@@ -19,7 +19,8 @@ public final class Migrations {
           id VARCHAR(64) PRIMARY KEY,
           name VARCHAR(160) NOT NULL,
           description VARCHAR(1000),
-          price DECIMAL(12,2) NOT NULL
+          price DECIMAL(12,2) NOT NULL,
+          currency VARCHAR(8) NOT NULL
         )""");
 
             st.execute("""
