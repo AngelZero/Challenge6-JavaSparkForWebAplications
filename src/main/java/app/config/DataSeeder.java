@@ -13,6 +13,7 @@ import java.util.List;
 public final class DataSeeder {
     private DataSeeder() {}
 
+
     public static void run() throws Exception {
         seedUsersIfEmpty();
         seedItemsFromJsonIfEmpty("/data/items.json");
