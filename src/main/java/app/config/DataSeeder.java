@@ -13,6 +13,7 @@ import java.util.List;
 public final class DataSeeder {
     private DataSeeder() {}
 
+
     public static void run() throws Exception {
         seedUsersIfEmpty();
         seedItemsFromJsonIfEmpty("/data/items.json");
@@ -110,20 +111,18 @@ public final class DataSeeder {
     private static String pickCurrency(String currencyField, String legacyPrice) {
         if (currencyField != null && !currencyField.isBlank()) return currencyField;
         if (legacyPrice != null) {
-            // intenta extraer "USD" de "$621.34 USD"
             var m = java.util.regex.Pattern.compile("([A-Za-z]{3})").matcher(legacyPrice);
             if (m.find()) return m.group(1);
         }
         return null;
     }
 
-    // Estructura intermedia de lectura
     private static final class ItemSeed {
         String id;
         String name;
         String description;
-        String currency;       // NUEVO
-        BigDecimal priceNumber; // NUEVO (price numérico)
-        String price;          // legado (price string)
+        String currency;
+        BigDecimal priceNumber;
+        String price;
     }
 }
