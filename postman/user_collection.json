@@ -1,0 +1,64 @@
+{
+  "info": {
+    "name": "Store — Sprint 1",
+    "description": "API for /users with DTOs. Base URL is {{baseUrl}} (defaults to http://localhost:4567).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health",
+      "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/health" }
+    },
+    {
+      "name": "List Users",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Accept", "value": "application/json" }],
+        "url": "{{baseUrl}}/users"
+      }
+    },
+    {
+      "name": "Create User (u1)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Ada Lovelace\",\n  \"email\": \"ada@example.com\"\n}"
+        },
+        "url": "{{baseUrl}}/users/u1"
+      }
+    },
+    {
+      "name": "Get User (u1)",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Accept", "value": "application/json" }],
+        "url": "{{baseUrl}}/users/u1"
+      }
+    },
+    {
+      "name": "Update User (u1)",
+      "request": {
+        "method": "PUT",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Ada L.\",\n  \"email\": \"ada.l@example.com\"\n}"
+        },
+        "url": "{{baseUrl}}/users/u1"
+      }
+    },
+    {
+      "name": "OPTIONS User (u1)",
+      "request": { "method": "OPTIONS", "header": [], "url": "{{baseUrl}}/users/u1" }
+    },
+    {
+      "name": "Delete User (u1)",
+      "request": { "method": "DELETE", "header": [], "url": "{{baseUrl}}/users/u1" }
+    }
+  ],
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:4567" }
+  ]
+}
