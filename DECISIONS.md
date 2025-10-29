@@ -2,50 +2,52 @@
 
 ## Framework & Architecture
 
-* **Spark (Java microframework)** over a full-stack framework:
-  Keeps the footprint small and explicit for routing and HTTP handling required by Sprint 1. We only add what the sprint asks for.
-
-* **Layered design (Controller → Service → Repository) with DTOs:**
-  Separates HTTP concerns, business rules, and data access. DTOs define the API contract; internal models and storage can evolve without breaking clients.
+* **Spark (Java microframework)** over a full-stack framework: keeps footprint small and explicit for routing and HTTP handling required by Sprint 1.
+* **Layered design (Controller → Service → Repository) with DTOs:** separates HTTP concerns, business rules, and data access. DTOs define the API contract; internals can evolve without breaking clients.
+* **Single shared `Gson` instance** injected into controllers and error handler for consistent JSON.
 
 ## Persistence
 
-* **H2 (embedded, in-memory) + JDBC:**
-  Meets the “simple database” goal with minimal configuration and no external services. JDBC prepared statements are explicit, easy to debug, and sufficient for Sprint 1.
+* **H2 (embedded, in-memory) + JDBC:** minimal configuration, no external services; prepared statements are explicit and easy to debug.
+* **Migrations at startup (plain SQL):** `Migrations.java` provisions schema. Items table includes `price DECIMAL(12,2)` and `currency VARCHAR(8) NOT NULL`. Defensive `ALTER` adds `currency` if a prior table exists without it.
+* **Connection strategy:** each repository method obtains a short-lived connection (`Db.getConnection()`) via try-with-resources.
 
-* **Migrations at startup (plain SQL):**
-  `Migrations.java` runs `CREATE TABLE IF NOT EXISTS ...` to provision the schema on boot. This avoids introducing a migrations tool for now.
+## Seeding Strategy
 
-* **Connection strategy:**
-  Each repository method obtains a short-lived connection via `Db.getConnection()` using try-with-resources. Simple, safe, and adequate for the current scope.
+* **DataSeeder** runs after migrations and only when tables are empty:
+
+* Seeds three demo **users** (`u1/u2/u3`).
+* Loads **items** from `resources/data/items.json`.
+* Supports **new JSON** shape (`price` numeric + `currency`) and **legacy** string prices (e.g., `"$621.34 USD"`), extracting amount and a 3-letter currency. Defaults to `USD` if none is found.
 
 ## Resource Modeling & IDs
 
-* **User IDs provided via path parameter (`/users/:id`)** as **strings**:
-  Aligns exactly with Sprint-1 instructions (POST/PUT/GET/DELETE operate on `/users/:id`).
-
-* **List endpoint hides IDs:**
-  Treats IDs as sensitive for bulk listings; `GET /users` returns `{name,email}` only. Single-record responses include the `id` since the caller already knows/targets it.
+* **IDs provided in path** for both Users and Items (`/users/:id`, `/items/:id`) as strings—aligns with Sprint-1.
+* **Users list hides IDs** (privacy); single-user responses include the `id`.
+* **Items list includes IDs** to allow navigation to detail and further actions.
 
 ## Validation & Errors
 
-* **Lightweight validation in the Service layer:**
+* **Users:** `name` and `email` required; email uniqueness checked.
+* **Items:** `name` required; `price` required and non-negative; `currency` required as a **3-letter code** (e.g., USD, MXN).
+* **Centralized error mapping:** `GlobalErrorHandler` maps:
 
-    * `name` and `email` required for create/update
-    * `email` uniqueness enforced at the repository level with a pre-check
-* **Centralized error mapping:**
-  Domain exceptions (`BadRequest`, `Conflict`, `NotFound`) are converted to JSON with appropriate HTTP status codes via `GlobalErrorHandler`.
+* `BadRequest` → 400, `NotFound` → 404, `Conflict` → 409 (for **both** UserService and ItemService),
+* plus `SQLIntegrityConstraintViolationException` (and H2’s specific subclass) → 409,
+* and a generic 500 for unexpected exceptions.
+* **Error JSON** unified as `{"message":"..."}`.
 
 ## JSON & Logging
 
 * **Gson** for serialization/deserialization of DTOs.
-* **Logback** for consistent console logging during development and review.
+* **Logback** for consistent console logging (SLF4J binding present; no NOP fallback).
 
 ## Portability & Future Work
 
-* **H2 URL uses `MODE=PostgreSQL`** to ease a future migration to PostgreSQL.
-* Post-Sprint-1 extensions (not implemented yet):
+* **H2 URL with `MODE=PostgreSQL`** to ease migration to PostgreSQL later.
+* **Potential next steps (post Sprint-1):**
 
-    * Templates/views and exception module for UI (Sprint 2).
-    * Item filters and WebSocket price updates (Sprint 3).
-    * Optional swap to Postgres by changing the JDBC URL/driver and adjusting DDL.
+* Templates/views and exception module for UI (Sprint 2).
+* Item filters and WebSocket price updates (Sprint 3).
+* Currency normalization or FX conversions (if needed in future).
+* Optional swap to Postgres by changing JDBC driver/URL and adjusting DDL.

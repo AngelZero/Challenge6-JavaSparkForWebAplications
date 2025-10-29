@@ -8,12 +8,22 @@ import com.google.gson.Gson;
 import static spark.Spark.*;
 
 public class UserController {
-    private final Gson gson = new Gson();
-    private final UserService service = new UserService(new UserRepository());
+    private final Gson gson;
+    private final UserService service;
+
+    public UserController(Gson gson) {
+        this.gson = gson;
+        this.service = new UserService(new UserRepository());
+    }
 
     public void register() {
-        get("/users", (req, res) -> { res.type("application/json"); return gson.toJson(service.list()); });
-        get("/users/:id", (req, res) -> { res.type("application/json"); return gson.toJson(service.get(req.params(":id"))); });
+        get("/users", (req, res) -> {
+            res.type("application/json"); return gson.toJson(service.list());
+        });
+
+        get("/users/:id", (req, res) -> {
+            res.type("application/json"); return gson.toJson(service.get(req.params(":id")));
+        });
         post("/users/:id", (req, res) -> {
             res.type("application/json");
             var dto = gson.fromJson(req.body(), UserRequestDTO.class);

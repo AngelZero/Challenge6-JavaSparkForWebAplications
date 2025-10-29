@@ -1,0 +1,60 @@
+{
+  "info": {
+    "name": "Store — Sprint 1 (Items)",
+    "description": "API for /items with DTOs. Base URL is {{baseUrl}} (defaults to http://localhost:4567).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "List Items",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Accept", "value": "application/json" }],
+        "url": "{{baseUrl}}/items"
+      }
+    },
+    {
+      "name": "Create Item (i1)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Rare Figurine\",\n  \"description\": \"Limited edition figure.\",\n  \"price\": 621.34\n}"
+        },
+        "url": "{{baseUrl}}/items/i1"
+      }
+    },
+    {
+      "name": "Get Item (i1)",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Accept", "value": "application/json" }],
+        "url": "{{baseUrl}}/items/i1"
+      }
+    },
+    {
+      "name": "Update Item (i1)",
+      "request": {
+        "method": "PUT",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Rare Figurine — v2\",\n  \"description\": \"Updated description.\",\n  \"price\": 599.99\n}"
+        },
+        "url": "{{baseUrl}}/items/i1"
+      }
+    },
+    {
+      "name": "OPTIONS Item (i1)",
+      "request": { "method": "OPTIONS", "header": [], "url": "{{baseUrl}}/items/i1" }
+    },
+    {
+      "name": "Delete Item (i1)",
+      "request": { "method": "DELETE", "header": [], "url": "{{baseUrl}}/items/i1" }
+    }
+  ],
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:4567" }
+  ]
+}
