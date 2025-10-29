@@ -1,4 +1,4 @@
-# Store — Sprint 1 (Spark + H2 + JDBC + DTO)
+# Store — Sprint 1 Finished (Spark + H2 + JDBC + DTO)
 
 ## Overview
 
