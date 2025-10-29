@@ -42,6 +42,7 @@ API service for the **users** resource built with **Spark (Java)**, **H2 (in-mem
       │   │   ├─ User.java
       │   │   └─ dto
       │   │       ├─ UserRequestDTO.java
+      │   │       ├─ UserListItemDTO.java
       │   │       └─ UserResponseDTO.java
       │   ├─ repo
       │   │   └─ UserRepository.java
