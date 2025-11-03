@@ -1,0 +1,59 @@
+{
+  "info": {
+    "name": "Store — Sprint 2 (Offers)",
+    "description": "Offers API: submit an offer (JSON or form) and list offers. Base URL is {{baseUrl}}.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Submit Offer (JSON)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"itemId\": \"{{itemId}}\",\n  \"name\": \"{{offerName}}\",\n  \"email\": \"{{offerEmail}}\",\n  \"amount\": {{offerAmount}}\n}"
+        },
+        "url": "{{baseUrl}}/api/offer"
+      }
+    },
+    {
+      "name": "Submit Offer (Form-URLENCODED)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/x-www-form-urlencoded" }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            { "key": "id", "value": "{{itemId}}", "type": "text" },
+            { "key": "name", "value": "{{offerName}}", "type": "text" },
+            { "key": "email", "value": "{{offerEmail}}", "type": "text" },
+            { "key": "amount", "value": "{{offerAmount}}", "type": "text" }
+          ]
+        },
+        "url": "{{baseUrl}}/api/offer"
+      }
+    },
+    {
+      "name": "List Offers",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Accept", "value": "application/json" }
+        ],
+        "url": "{{baseUrl}}/api/offers"
+      }
+    }
+  ],
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:4567" },
+    { "key": "itemId", "value": "i1" },
+    { "key": "offerName", "value": "Alice Example" },
+    { "key": "offerEmail", "value": "alice@example.com" },
+    { "key": "offerAmount", "value": "123.45" }
+  ]
+}

@@ -14,6 +14,8 @@ public final class GlobalErrorHandler {
                 (ex, req, res) -> send(res, 404, gson, ex.getMessage()));
         exception(app.service.ItemService.NotFound.class,
                 (ex, req, res) -> send(res, 404, gson, ex.getMessage()));
+        exception(app.service.OfferService.NotFound.class,
+                (ex, req, res) -> send(res, 404, gson, ex.getMessage()));
 
         // 409 Conflict (dominio)
         exception(app.service.UserService.Conflict.class,
@@ -24,7 +26,6 @@ public final class GlobalErrorHandler {
         // 409 Conflict
         exception(java.sql.SQLIntegrityConstraintViolationException.class,
                 (ex, req, res) -> send(res, 409, gson, "Conflict: duplicate or constraint violation"));
-        // H2 lanza esta excepción específica en algunos casos
         exception(org.h2.jdbc.JdbcSQLIntegrityConstraintViolationException.class,
                 (ex, req, res) -> send(res, 409, gson, "Conflict: duplicate or constraint violation"));
 
@@ -33,10 +34,11 @@ public final class GlobalErrorHandler {
                 (ex, req, res) -> send(res, 400, gson, ex.getMessage()));
         exception(app.service.ItemService.BadRequest.class,
                 (ex, req, res) -> send(res, 400, gson, ex.getMessage()));
+        exception(app.service.OfferService.BadRequest.class,
+                (ex, req, res) -> send(res, 400, gson, ex.getMessage()));
 
-        // 500 genérico (cualquier otra cosa)
+        // 500
         exception(Exception.class, (ex, req, res) -> {
-            // aquí podrías log.error(..., ex) si quieres ver el stack trace en consola
             send(res, 500, gson, "Internal error");
         });
     }

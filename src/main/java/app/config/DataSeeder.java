@@ -17,6 +17,8 @@ public final class DataSeeder {
     public static void run() throws Exception {
         seedUsersIfEmpty();
         seedItemsFromJsonIfEmpty("/data/items.json");
+        seedOffersFromJsonIfEmpty("/data/ofertas.json");
+
     }
 
     private static void seedUsersIfEmpty() throws Exception {
@@ -125,4 +127,51 @@ public final class DataSeeder {
         BigDecimal priceNumber;
         String price;
     }
+
+    private static void seedOffersFromJsonIfEmpty(String resourcePath) throws Exception {
+        try (Connection c = Db.getConnection()) {
+            if (countRows(c, "offers") > 0) return;
+            var offers = loadOffersFromResource(resourcePath);
+            if (offers.isEmpty()) return;
+            try (PreparedStatement ps = c.prepareStatement(
+                    "INSERT INTO offers(item_id,name,email,amount) VALUES(?,?,?,?)")) {
+                for (OfferSeed o : offers) {
+                    ps.setString(1, o.itemId);
+                    ps.setString(2, o.name);
+                    ps.setString(3, o.email);
+                    ps.setBigDecimal(4, o.amount);
+                    ps.addBatch();
+                }
+                ps.executeBatch();
+            }
+        }
+    }
+
+    private static List<OfferSeed> loadOffersFromResource(String resourcePath) {
+        try {
+            InputStream in = DataSeeder.class.getResourceAsStream(resourcePath);
+            if (in == null) return List.of();
+            var root = JsonParser.parseReader(new InputStreamReader(in)).getAsJsonObject();
+            var arr = root.getAsJsonArray("offers");
+            List<OfferSeed> list = new ArrayList<>();
+            for (JsonElement e : arr) {
+                var o = e.getAsJsonObject();
+                OfferSeed s = new OfferSeed();
+                s.name = getStr(o, "name");
+                s.email = getStr(o, "email");
+                s.itemId = getStr(o, "id"); // input example uses "id" for the item id
+                s.amount = o.get("amount").getAsBigDecimal();
+                list.add(s);
+            }
+            return list;
+        } catch (Exception ex) {
+            return List.of();
+        }
+    }
+
+    private static final class OfferSeed {
+        String itemId; String name; String email; java.math.BigDecimal amount;
+    }
+
+
 }
