@@ -52,6 +52,13 @@
             <version>2.4.240</version>
         </dependency>
 
+        <!-- https://mvnrepository.com/artifact/com.sparkjava/spark-template-mustache -->
+        <dependency>
+            <groupId>com.sparkjava</groupId>
+            <artifactId>spark-template-mustache</artifactId>
+            <version>2.7.1</version>
+        </dependency>
+
     </dependencies>
 
 </project>

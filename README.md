@@ -1,26 +1,32 @@
-Here are the corrected files—updated to include **Items** (with decimal `price` and `currency`), the **data seeding**, and the improved **error handling**.
-
----
-
-# README.md
-
-# Store — Sprint 1 Finished (Spark + H2 + JDBC + DTO)
+# Spark Store — Sprint 1 & 2 (Spark + H2 + JDBC + DTO + Mustache)
 
 ## Overview
 
-API service for **Users** and **Items** built with **Spark (Java)**, **H2 (in-memory)**, and **plain JDBC**, using **DTOs** for clean request/response payloads.
+Web API and basic HTML views for **Users** and **Items** built with **Spark (Java)**, **H2 (in-memory)**, and **plain JDBC**, using **DTOs** for clean request/response payloads and **Mustache** for templates.
 
-**Sprint-1 scope (per instructions):**
+**Sprint-1 scope:**
 
 * **Users routes:**
   `GET /users`, `GET /users/:id`, `POST /users/:id`, `PUT /users/:id`, `OPTIONS /users/:id`, `DELETE /users/:id`
 * **Items routes:**
   `GET /items`, `GET /items/:id`, `POST /items/:id`, `PUT /items/:id`, `OPTIONS /items/:id`, `DELETE /items/:id`
-* **IDs in path**: creation/updates use the **path `:id`** (string).
-* **Users list hides IDs:** `GET /users` returns only `name` and `email`.
-* **Items list includes IDs** (to navigate to detail): `id`, `name`, `price`, `currency`.
-* Logging via **Logback**.
-* Decisions recorded in `DECISIONS.md`.
+* **IDs in path** for create/update.
+* **Users list hides IDs**; **Items list includes IDs** (for navigation).
+* Logging via **Logback**; decisions in `DECISIONS.md`.
+
+**Sprint-2 scope:**
+
+* **Exception handling module** (extended to cover Offers; domain errors → JSON with proper HTTP codes).
+* **Views & templates** (Mustache):
+
+  * `GET /ui/items` — items list (name, price, currency)
+  * `GET /ui/items/:id` — item detail (name, description, price, currency) + **offer form**
+* **Web form for offers** and **Offers API**:
+
+  * `POST /api/offer` — submit an offer (JSON or form-urlencoded)
+  * `GET /api/offers` — list offers (for verification)
+* **Static assets** (your provided `styles.css`, `offer.css`, `script.js`, `offer.js`) wired to templates.
+* **Seeding** extended to **offers** (optional file `resources/data/ofertas.json`).
 
 ## Tech used
 
@@ -30,18 +36,21 @@ API service for **Users** and **Items** built with **Spark (Java)**, **H2 (in-me
 * JDBC (prepared statements)
 * Gson (JSON)
 * Logback (logging)
+* Mustache (templates via `spark-template-mustache`)
 * Maven (build)
+* jQuery (via CDN on the item detail page, used by the offer form script)
 
 ## Project Structure
 
 ```
-/ (repo root)
+/
   ├─ pom.xml
   ├─ README.md
   ├─ DECISIONS.md
   ├─ postman
   │   ├─ user_collection.json
-  │   └─ items_collection.json
+  │   ├─ items_collection.json
+  │   └─ offers_collection.json
   └─ src/main
       ├─ java/app
       │   ├─ Main.java
@@ -51,28 +60,44 @@ API service for **Users** and **Items** built with **Spark (Java)**, **H2 (in-me
       │   │   └─ DataSeeder.java
       │   ├─ model
       │   │   ├─ User.java
-      │   │   └─ Item.java
+      │   │   ├─ Item.java
+      │   │   └─ Offer.java
       │   ├─ model/dto
       │   │   ├─ UserRequestDTO.java
       │   │   ├─ UserListItemDTO.java
       │   │   ├─ UserResponseDTO.java
       │   │   ├─ ItemRequestDTO.java
       │   │   ├─ ItemListDTO.java
-      │   │   └─ ItemResponseDTO.java
+      │   │   ├─ ItemResponseDTO.java
+      │   │   ├─ OfferRequestDTO.java
+      │   │   └─ OfferResponseDTO.java
       │   ├─ repo
       │   │   ├─ UserRepository.java
-      │   │   └─ ItemRepository.java
+      │   │   ├─ ItemRepository.java
+      │   │   └─ OfferRepository.java
       │   ├─ service
       │   │   ├─ UserService.java
-      │   │   └─ ItemService.java
+      │   │   ├─ ItemService.java
+      │   │   └─ OfferService.java
       │   └─ web
       │       ├─ GlobalErrorHandler.java
-      │       ├─ UserController.java
-      │       └─ ItemController.java
+      │       ├─ UserController.java        # JSON API
+      │       ├─ ItemController.java        # JSON API
+      │       ├─ OfferController.java       # JSON API
+      │       └─ ItemViewController.java    # HTML views (Mustache)
       └─ resources
           ├─ logback.xml
+          ├─ templates
+          │   ├─ items.mustache
+          │   └─ item_detail.mustache
+          ├─ public
+          │   ├─ styles.css     # provided
+          │   ├─ offer.css      # provided (renamed from styles Offer.css)
+          │   ├─ script.js      # provided (tweak: navigates to /ui/items/:id)
+          │   └─ offer.js       # provided (tweak: posts itemId from hidden input)
           └─ data
-             └─ items.json
+              ├─ items.json     # seed (supports numeric price+currency or legacy "$123.45 USD")
+              └─ ofertas.json   # optional seed for offers (schema shown below)
 ```
 
 ## How to Run
@@ -80,27 +105,54 @@ API service for **Users** and **Items** built with **Spark (Java)**, **H2 (in-me
 ### IDE
 
 1. Ensure Java 17+ and Maven are installed.
-2. Open the project, set dependency versions in `pom.xml`.
+2. Open the project, verify dependency versions in `pom.xml` (including `spark-template-mustache`).
 3. Run `app.Main`.
 4. Verify health: `http://localhost:4567/health` → `OK`.
 
 > Change the port in `Main.java` (`port(4567)`) if needed.
+> Static assets served from `/public` (`staticFiles.location("/public")`).
+
+### Quick UI check (Sprint 2)
+
+* **List page:** `http://localhost:4567/ui/items`
+* **Detail page:** click an item; verify description and **offer form**.
 
 ## Database
 
-* H2 in-memory URL is defined in `Db.java`:
+* H2 in-memory URL in `Db.java`:
   `jdbc:h2:mem:collectibles;DB_CLOSE_DELAY=-1;MODE=PostgreSQL`
 * Tables are created on startup by `Migrations.java`.
-* **Seed data** (`DataSeeder.java`):
 
-  * Seeds **users** (`u1/u2/u3`) if table is empty.
-  * Loads **items** from `src/main/resources/data/items.json` if table is empty.
-  * Accepts **new format** (`price` as number + `currency`) and is backward-compatible with legacy strings like `"$621.34 USD"`.
-* Data resets on each app restart.
+**Schema highlights**
+
+* `users(id, name, email UNIQUE)`
+* `items(id, name, description, price DECIMAL(12,2), currency VARCHAR(8) NOT NULL)`
+* `offers(id BIGINT GENERATED BY DEFAULT AS IDENTITY, item_id, name, email, amount DECIMAL(12,2), created_at)`
+
+**Seed data** (`DataSeeder.java`)
+
+* Seeds **users** (`u1/u2/u3`) if empty.
+* Loads **items** from `resources/data/items.json` if empty.
+  Supports:
+
+  * **New format:**
+
+    ```json
+    { "id":"i1", "name":"Rare Figurine", "description":"...", "price":621.34, "currency":"USD" }
+    ```
+  * **Legacy string:** `"price": "$621.34 USD"` → parsed to `price=621.34`, `currency="USD"`.
+* Loads **offers** from `resources/data/ofertas.json` if present & empty table. Example:
+
+  ```json
+  { "offers": [
+      { "id": "i1", "name": "Alice", "email": "alice@example.com", "amount": 120.00 },
+      { "id": "i2", "name": "Bob",   "email": "bob@example.com",   "amount": 75.50 }
+  ] }
+  ```
 
 ## API Contract
 
-### USERS — Data Transfer Objects (DTO)
+### USERS — DTOs
 
 **Request (create/update):**
 
@@ -108,7 +160,7 @@ API service for **Users** and **Items** built with **Spark (Java)**, **H2 (in-me
 { "name": "string (required)", "email": "string (required, unique)" }
 ```
 
-**List item (GET /users)** — *ID hidden*:
+**List (GET /users)** — *ID hidden*:
 
 ```json
 [
@@ -116,13 +168,13 @@ API service for **Users** and **Items** built with **Spark (Java)**, **H2 (in-me
 ]
 ```
 
-**Single user (GET/POST/PUT /users/:id):**
+**Single (GET/POST/PUT /users/:id):**
 
 ```json
 { "id": "string", "name": "string", "email": "string" }
 ```
 
-### ITEMS — Data Transfer Objects (DTO)
+### ITEMS — DTOs
 
 **Request (create/update):**
 
@@ -131,11 +183,11 @@ API service for **Users** and **Items** built with **Spark (Java)**, **H2 (in-me
   "name": "string (required)",
   "description": "string (optional)",
   "price": 123.45,
-  "currency": "USD"  // 3-letter code, e.g., USD, MXN
+  "currency": "USD"  // 3-letter code (e.g., USD, MXN)
 }
 ```
 
-**List item (GET /items):**
+**List (GET /items):**
 
 ```json
 [
@@ -143,7 +195,7 @@ API service for **Users** and **Items** built with **Spark (Java)**, **H2 (in-me
 ]
 ```
 
-**Single item (GET/POST/PUT /items/:id):**
+**Single (GET/POST/PUT /items/:id):**
 
 ```json
 {
@@ -155,7 +207,35 @@ API service for **Users** and **Items** built with **Spark (Java)**, **H2 (in-me
 }
 ```
 
-### Endpoints
+### OFFERS — DTOs (Sprint 2)
+
+**Submit (JSON or form):**
+
+```json
+{
+  "itemId": "i1",
+  "name": "Alice",
+  "email": "alice@example.com",
+  "amount": 123.45
+}
+```
+
+* Form-URLENCODED also supported with fields: `id` (or `itemId`), `name`, `email`, `amount`.
+* Response (201):
+
+```json
+{ "id": 7, "itemId": "i1", "name": "Alice", "email": "alice@example.com", "amount": 123.45 }
+```
+
+**List offers:**
+
+```json
+[
+  { "id": 7, "itemId": "i1", "name": "Alice", "email": "alice@example.com", "amount": 123.45 }
+]
+```
+
+## Endpoints
 
 **Users**
 
@@ -175,17 +255,37 @@ API service for **Users** and **Items** built with **Spark (Java)**, **H2 (in-me
 * `OPTIONS /items/:id` → 204 if exists, 404 otherwise.
 * `DELETE /items/:id` → 204 on success; 404 if not found.
 
-### Error Handling
+**Offers (Sprint 2)**
+
+* `POST /api/offer` → 201 on success; 400 on validation errors; 404 if `itemId` does not exist.
+* `GET /api/offers` → 200 list of offers (most recent first).
+
+## Views (Sprint 2)
+
+* **`/ui/items`** — Mustache table for items (name → link, price, currency).
+* **`/ui/items/:id`** — Mustache detail page showing name, description, price, currency, plus **offer form** (uses provided `offer.js` and `offer.css`).
+* **Static files** are served from `/public`: `styles.css`, `offer.css`, `script.js`, `offer.js`.
+
+  * `script.js` was adjusted to navigate to `/ui/items/:id` (HTML view) instead of the JSON endpoint.
+
+## Error Handling
 
 * JSON error shape: `{"message":"..."}`
 * Mapped statuses:
 
-  * `400` Bad Request (validation)
-  * `404` Not Found
-  * `409` Conflict (duplicate id/email, constraint violations)
+  * `400` Bad Request (validation, including offers)
+  * `404` Not Found (users/items/offers domain checks)
+  * `409` Conflict (duplicate id/email, SQL constraint violations)
   * `500` Internal error (unexpected)
+
 
 ## Logging
 
-* SLF4J + Logback console logging configured in `src/main/resources/logback.xml`.
-* Typical pattern: `HH:mm:ss.SSS LEVEL [thread] logger - message`.
+* SLF4J + Logback console logging (`src/main/resources/logback.xml`)
+* Pattern: `HH:mm:ss.SSS LEVEL [thread] logger - message`
+
+## Postman Collections
+
+* `postman/user_collection.json` — Users endpoints
+* `postman/items_collection.json` — Items endpoints
+* `postman/offers_collection.json` — Offers endpoints (`POST /api/offer`, `GET /api/offers`)

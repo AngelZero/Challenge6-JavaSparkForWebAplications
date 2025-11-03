@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Items</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <h1>Items for sale</h1>
+
+  <table id="item-list-table">
+    <thead>
+      <tr><th>Name</th><th>Price</th><th>Currency</th></tr>
+    </thead>
+    <tbody>
+    {{#items}}
+      <tr class="list-item">
+        <td>
+          <a class="item-name-link" href="/items/{{id}}">{{name}}</a>
+        </td>
+        <td>{{price}}</td>
+        <td>{{currency}}</td>
+      </tr>
+    {{/items}}
+    </tbody>
+  </table>
+
+  <script src="/script.js"></script>
+</body>
+</html>
