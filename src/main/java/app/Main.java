@@ -2,6 +2,7 @@ package app;
 
 import app.config.DataSeeder;
 import app.config.Migrations;
+import app.realtime.WsEndpoint;
 import app.web.*;
 import com.google.gson.Gson;
 
@@ -24,14 +25,19 @@ public class Main {
         Migrations.run();
         DataSeeder.run();
 
+        webSocket("/ws", WsEndpoint.class);
+
+
         get("/health", (req, res) -> "OK");
         GlobalErrorHandler.register(gson);
 
         new UserController(gson).register();
         new ItemController(gson).register();
 
-        new OfferController(gson).register();     // JSON API (offers)
+        new OfferController(gson).register();
         new ItemViewController().register();
+        new OfferViewController().register();
+
 
         init();
         awaitInitialization();

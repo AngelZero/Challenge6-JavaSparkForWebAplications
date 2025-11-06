@@ -1,46 +1,53 @@
-# Spark Store — Sprint 1 & 2 (Spark + H2 + JDBC + DTO + Mustache)
+# Java Spark for web apps (Spark + H2 + JDBC + DTO + Mustache + WebSocket)
 
 ## Overview
 
-Web API and basic HTML views for **Users** and **Items** built with **Spark (Java)**, **H2 (in-memory)**, and **plain JDBC**, using **DTOs** for clean request/response payloads and **Mustache** for templates.
+Web API and HTML views for **Users**, **Items**, and **Offers** built with **Spark (Java)**, **H2 (in-memory)**, **plain JDBC**, **DTOs** for clean payloads, **Mustache** templates for the UI, and a **WebSocket** channel for real-time updates.
 
-**Sprint-1 scope:**
+**Sprint-1 scope**
 
-* **Users routes:**
-  `GET /users`, `GET /users/:id`, `POST /users/:id`, `PUT /users/:id`, `OPTIONS /users/:id`, `DELETE /users/:id`
-* **Items routes:**
-  `GET /items`, `GET /items/:id`, `POST /items/:id`, `PUT /items/:id`, `OPTIONS /items/:id`, `DELETE /items/:id`
-* **IDs in path** for create/update.
+* **Users routes:** `GET /users`, `GET /users/:id`, `POST /users/:id`, `PUT /users/:id`, `OPTIONS /users/:id`, `DELETE /users/:id`
+* **Items routes:** `GET /items`, `GET /items/:id`, `POST /items/:id`, `PUT /items/:id`, `OPTIONS /items/:id`, `DELETE /items/:id`
+* IDs supplied in the **path** for create/update.
 * **Users list hides IDs**; **Items list includes IDs** (for navigation).
-* Logging via **Logback**; decisions in `DECISIONS.md`.
+* Logback logging; decisions in `DECISIONS.md`.
 
-**Sprint-2 scope:**
+**Sprint-2 scope**
 
-* **Exception handling module** (extended to cover Offers; domain errors → JSON with proper HTTP codes).
-* **Views & templates** (Mustache):
+* **Exception handling module** (domain errors → JSON with proper HTTP codes).
+* **Views & templates (Mustache)**
 
   * `GET /ui/items` — items list (name, price, currency)
   * `GET /ui/items/:id` — item detail (name, description, price, currency) + **offer form**
-* **Web form for offers** and **Offers API**:
+* **Offers**
 
   * `POST /api/offer` — submit an offer (JSON or form-urlencoded)
-  * `GET /api/offers` — list offers (for verification)
-* **Static assets** (your provided `styles.css`, `offer.css`, `script.js`, `offer.js`) wired to templates.
-* **Seeding** extended to **offers** (optional file `resources/data/ofertas.json`).
+  * `GET /api/offers` — list offers
+* Static assets wired: `styles.css`, `offer.css`, `script.js`, `offer.js`.
+* **Seeding** extended (optional `resources/data/ofertas.json`).
+
+**Sprint-3 scope**
+
+* **Item filters** (API + UI): `min_price`, `max_price`, `currency`, `q` (name contains).
+  – No params → return **all**. Any subset works in combination.
+* **WebSocket live updates** (`/ws`):
+
+  * Item **update** (name/description/price/currency) reflected instantly in list and detail.
+  * Item **create/delete** reflected instantly in the list (respects current filters).
+  * **New offers** show up instantly in the item’s **offers table** on its detail page.
+  * Visual cue: changed fields fade **to red**, hold 2s, then fade back to black.
 
 ## Tech used
 
 * Java 17+
-* Spark (HTTP microframework)
+* Spark (HTTP microframework) + Jetty WebSocket (via Spark)
 * H2 (embedded, in-memory)
 * JDBC (prepared statements)
 * Gson (JSON)
 * Logback (logging)
 * Mustache (templates via `spark-template-mustache`)
-* Maven (build)
-* jQuery (via CDN on the item detail page, used by the offer form script)
 
-## Project Structure
+## Project structure
 
 ```
 /
@@ -49,8 +56,8 @@ Web API and basic HTML views for **Users** and **Items** built with **Spark (Jav
   ├─ DECISIONS.md
   ├─ postman
   │   ├─ user_collection.json
-  │   ├─ items_collection.json
-  │   └─ offers_collection.json
+  │   ├─ item_collection.json
+  │   └─ offer_collection.json
   └─ src/main
       ├─ java/app
       │   ├─ Main.java
@@ -79,213 +86,197 @@ Web API and basic HTML views for **Users** and **Items** built with **Spark (Jav
       │   │   ├─ UserService.java
       │   │   ├─ ItemService.java
       │   │   └─ OfferService.java
+      │   ├─ realtime
+      │   │   └─ WsEndpoint.java
       │   └─ web
       │       ├─ GlobalErrorHandler.java
-      │       ├─ UserController.java        # JSON API
-      │       ├─ ItemController.java        # JSON API
-      │       ├─ OfferController.java       # JSON API
-      │       └─ ItemViewController.java    # HTML views (Mustache)
+      │       ├─ UserController.java
+      │       ├─ ItemController.java
+      │       ├─ OfferController.java
+      │       ├─ ItemViewController.java
+      │       └─ OfferViewController.java (if present)
       └─ resources
           ├─ logback.xml
           ├─ templates
           │   ├─ items.mustache
           │   └─ item_detail.mustache
           ├─ public
-          │   ├─ styles.css     # provided
-          │   ├─ offer.css      # provided (renamed from styles Offer.css)
-          │   ├─ script.js      # provided (tweak: navigates to /ui/items/:id)
-          │   └─ offer.js       # provided (tweak: posts itemId from hidden input)
+          │   ├─ styles.css
+          │   ├─ offer.css
+          │   ├─ script.js
+          │   ├─ offer.js
+          │   └─ ws.js
           └─ data
-              ├─ items.json     # seed (supports numeric price+currency or legacy "$123.45 USD")
-              └─ ofertas.json   # optional seed for offers (schema shown below)
+              ├─ items.json
+              └─ ofertas.json
 ```
 
-## How to Run
+## How to run
 
-### IDE
+1. Java 17+ and Maven installed.
+2. Run `app.Main`.
+3. Health check → `http://localhost:4567/health` returns `OK`.
+4. UI:
 
-1. Ensure Java 17+ and Maven are installed.
-2. Open the project, verify dependency versions in `pom.xml` (including `spark-template-mustache`).
-3. Run `app.Main`.
-4. Verify health: `http://localhost:4567/health` → `OK`.
+  * List: `http://localhost:4567/ui/items`
+  * Detail: click any item
 
-> Change the port in `Main.java` (`port(4567)`) if needed.
-> Static assets served from `/public` (`staticFiles.location("/public")`).
-
-### Quick UI check (Sprint 2)
-
-* **List page:** `http://localhost:4567/ui/items`
-* **Detail page:** click an item; verify description and **offer form**.
+> Static files served from `/public` (`staticFiles.location("/public")`).
+> WebSocket mounted at `/ws`.
 
 ## Database
 
-* H2 in-memory URL in `Db.java`:
+* H2 URL in `Db.java`:
   `jdbc:h2:mem:collectibles;DB_CLOSE_DELAY=-1;MODE=PostgreSQL`
-* Tables are created on startup by `Migrations.java`.
+* Tables created by `Migrations.java` on startup.
 
-**Schema highlights**
+## API
 
-* `users(id, name, email UNIQUE)`
-* `items(id, name, description, price DECIMAL(12,2), currency VARCHAR(8) NOT NULL)`
-* `offers(id BIGINT GENERATED BY DEFAULT AS IDENTITY, item_id, name, email, amount DECIMAL(12,2), created_at)`
+### Users DTOs
 
-**Seed data** (`DataSeeder.java`)
-
-* Seeds **users** (`u1/u2/u3`) if empty.
-* Loads **items** from `resources/data/items.json` if empty.
-  Supports:
-
-  * **New format:**
-
-    ```json
-    { "id":"i1", "name":"Rare Figurine", "description":"...", "price":621.34, "currency":"USD" }
-    ```
-  * **Legacy string:** `"price": "$621.34 USD"` → parsed to `price=621.34`, `currency="USD"`.
-* Loads **offers** from `resources/data/ofertas.json` if present & empty table. Example:
-
-  ```json
-  { "offers": [
-      { "id": "i1", "name": "Alice", "email": "alice@example.com", "amount": 120.00 },
-      { "id": "i2", "name": "Bob",   "email": "bob@example.com",   "amount": 75.50 }
-  ] }
-  ```
-
-## API Contract
-
-### USERS — DTOs
-
-**Request (create/update):**
+**Request (create/update)**
 
 ```json
 { "name": "string (required)", "email": "string (required, unique)" }
 ```
 
-**List (GET /users)** — *ID hidden*:
+**List (GET /users)** – ID hidden:
 
 ```json
-[
-  { "name": "string", "email": "string" }
-]
+[{ "name": "string", "email": "string" }]
 ```
 
-**Single (GET/POST/PUT /users/:id):**
+**Single (GET/POST/PUT /users/:id)**
 
 ```json
 { "id": "string", "name": "string", "email": "string" }
 ```
 
-### ITEMS — DTOs
+### Items DTOs
 
-**Request (create/update):**
+**Request (create/update)**
 
 ```json
 {
   "name": "string (required)",
   "description": "string (optional)",
   "price": 123.45,
-  "currency": "USD"  // 3-letter code (e.g., USD, MXN)
-}
-```
-
-**List (GET /items):**
-
-```json
-[
-  { "id": "string", "name": "string", "price": 123.45, "currency": "USD" }
-]
-```
-
-**Single (GET/POST/PUT /items/:id):**
-
-```json
-{
-  "id": "string",
-  "name": "string",
-  "description": "string",
-  "price": 123.45,
   "currency": "USD"
 }
 ```
 
-### OFFERS — DTOs (Sprint 2)
-
-**Submit (JSON or form):**
+**List (GET /items)**
 
 ```json
-{
-  "itemId": "i1",
-  "name": "Alice",
-  "email": "alice@example.com",
-  "amount": 123.45
-}
+[{ "id": "string", "name": "string", "price": 123.45, "currency": "USD" }]
 ```
 
-* Form-URLENCODED also supported with fields: `id` (or `itemId`), `name`, `email`, `amount`.
-* Response (201):
+**Single (GET/POST/PUT /items/:id)**
 
 ```json
-{ "id": 7, "itemId": "i1", "name": "Alice", "email": "alice@example.com", "amount": 123.45 }
+{ "id": "string", "name": "string", "description": "string", "price": 123.45, "currency": "USD" }
 ```
 
-**List offers:**
+### Offers DTOs
+
+**Submit (JSON or form)**
 
 ```json
-[
-  { "id": 7, "itemId": "i1", "name": "Alice", "email": "alice@example.com", "amount": 123.45 }
-]
+{ "itemId": "i1", "name": "Alice", "email": "alice@example.com", "amount": 123.45 }
+```
+
+Form fields also accepted: `id` (alias of `itemId`), `name`, `email`, `amount`.
+
+**List**
+
+```json
+[{ "id": 7, "itemId": "i1", "name": "Alice", "email": "alice@example.com", "amount": 123.45 }]
 ```
 
 ## Endpoints
 
 **Users**
 
-* `GET /users` → 200, returns array of `{name,email}` (no IDs).
-* `GET /users/:id` → 200 with a single user; 404 if not found.
-* `POST /users/:id` → 201 creates user with path id; 409 if id/email conflict; 400 if invalid body.
-* `PUT /users/:id` → 200 updates user; 404 if not found; 400/409 as applicable.
-* `OPTIONS /users/:id` → 204 if exists, 404 otherwise.
-* `DELETE /users/:id` → 204 on success; 404 if not found.
+* `GET /users`
+* `GET /users/:id`
+* `POST /users/:id`
+* `PUT /users/:id`
+* `OPTIONS /users/:id`
+* `DELETE /users/:id`
 
 **Items**
 
-* `GET /items` → 200, returns array of `{id,name,price,currency}`.
-* `GET /items/:id` → 200 with a single item; 404 if not found.
-* `POST /items/:id` → 201 creates item with path id; 409 if duplicate id; 400 if invalid body.
-* `PUT /items/:id` → 200 updates item; 404 if not found; 400 on validation errors.
-* `OPTIONS /items/:id` → 204 if exists, 404 otherwise.
-* `DELETE /items/:id` → 204 on success; 404 if not found.
+* `GET /items`  *(supports filters: `min_price`, `max_price`, `currency`, `q`)*
+* `GET /items/:id`
+* `POST /items/:id`
+* `PUT /items/:id`
+* `OPTIONS /items/:id`
+* `DELETE /items/:id`
 
-**Offers (Sprint 2)**
+**Offers**
 
-* `POST /api/offer` → 201 on success; 400 on validation errors; 404 if `itemId` does not exist.
-* `GET /api/offers` → 200 list of offers (most recent first).
+* `POST /api/offer`
+* `GET /api/offers`
 
-## Views (Sprint 2)
+## Views
 
-* **`/ui/items`** — Mustache table for items (name → link, price, currency).
-* **`/ui/items/:id`** — Mustache detail page showing name, description, price, currency, plus **offer form** (uses provided `offer.js` and `offer.css`).
-* **Static files** are served from `/public`: `styles.css`, `offer.css`, `script.js`, `offer.js`.
+**`/ui/items`**
 
-  * `script.js` was adjusted to navigate to `/ui/items/:id` (HTML view) instead of the JSON endpoint.
+* Server-rendered table (Mustache).
+* Filters via query string; empty form → **all** items.
 
-## Error Handling
+**`/ui/items/:id`**
 
-* JSON error shape: `{"message":"..."}`
-* Mapped statuses:
+* Two columns (6/12 + 6/12): **details** and **offer form** (toggle).
+* Offers table below (name, email, amount), newest first.
 
-  * `400` Bad Request (validation, including offers)
-  * `404` Not Found (users/items/offers domain checks)
-  * `409` Conflict (duplicate id/email, SQL constraint violations)
-  * `500` Internal error (unexpected)
+## Real-time (WebSocket)
 
+**Server setup**
+
+* `webSocket("/ws", WsEndpoint.class);` in `Main`.
+
+**Server broadcasts**
+
+* `updateItem` — after `PUT /items/:id`
+* `itemCreated` — after `POST /items/:id`
+* `itemDeleted` — after `DELETE /items/:id`
+* `newOffer` — after `POST /api/offer`
+
+**Client (`public/ws.js`)**
+
+* Connects to `/ws`.
+* Updates fields in place by element id:
+
+  * Items list/detail: `#name-{id}`, `#price-{id}`, `#currency-{id}`, `#description-{id}`
+  * Offers detail table: prepends a row to `#offer-tbody` for the current item.
+* Visual cue: text color transitions **red → hold 2s → black** on any changed field.
+* Respects current filters when inserting newly created items.
+
+## Error handling
+
+JSON error shape: `{"message":"..."}`
+Statuses: `400` (validation), `404` (not found), `409` (conflict), `500` (unexpected).
 
 ## Logging
 
-* SLF4J + Logback console logging (`src/main/resources/logback.xml`)
-* Pattern: `HH:mm:ss.SSS LEVEL [thread] logger - message`
+SLF4J + Logback (`src/main/resources/logback.xml`).
+Pattern: `HH:mm:ss.SSS LEVEL [thread] logger - message`.
 
-## Postman Collections
+## Postman collections
 
-* `postman/user_collection.json` — Users endpoints
-* `postman/items_collection.json` — Items endpoints
-* `postman/offers_collection.json` — Offers endpoints (`POST /api/offer`, `GET /api/offers`)
+* `postman/user_collection.json`
+* `postman/item_collection.json`
+* `postman/offer_collection.json`
+
+## Quick real-time test
+
+1. Open **two** tabs: `/ui/items` and one item’s `/ui/items/:id`.
+2. In Postman:
+
+  * `PUT /items/i1` with a new price/name → both tabs update instantly.
+  * `POST /items/newId` → appears in the list (if it matches filters).
+  * `DELETE /items/newId` → disappears from the list.
+  * `POST /api/offer` (for that item) → new row appears in the offers table on its detail page.
+
+---

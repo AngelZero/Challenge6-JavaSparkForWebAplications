@@ -34,6 +34,16 @@ public class OfferController {
             }
             var created = service.create(dto);
             res.status(201);
+
+            // inside POST /api/offer after creating the offer (status 201 already set)
+            app.realtime.WsEndpoint.broadcastNewOffer(
+                    created.getId(),
+                    created.getItemId(),
+                    created.getName(),
+                    created.getEmail(),       // <- pass email
+                    created.getAmount()
+            );
+
             return gson.toJson(created);
         });
 

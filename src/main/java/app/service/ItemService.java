@@ -51,6 +51,13 @@ public class ItemService {
         if (repo.delete(id) == 0) throw new NotFound("Item not found");
     }
 
+    public List<ItemListDTO> listFiltered(BigDecimal minPrice, BigDecimal maxPrice, String currency, String q) throws SQLException {
+        return repo.findFiltered(minPrice, maxPrice, currency, q).stream()
+                .map(i -> new ItemListDTO(i.getId(), i.getName(), i.getPrice(), i.getCurrency()))
+                .collect(Collectors.toList());
+    }
+
+
     private void validate(ItemRequestDTO dto) {
         if (dto == null) throw new BadRequest("Body is required");
         if (blank(dto.getName())) throw new BadRequest("Name is required");
@@ -62,6 +69,8 @@ public class ItemService {
         if (!CURRENCY_3L.matcher(cur).matches())
             throw new BadRequest("Currency must be a 3-letter code (e.g., USD, MXN)");
     }
+
+
 
     private boolean blank(String s) { return s == null || s.isBlank(); }
 

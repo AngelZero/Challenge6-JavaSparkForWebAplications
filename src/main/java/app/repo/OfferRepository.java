@@ -42,4 +42,28 @@ public class OfferRepository {
             return out;
         }
     }
+
+    public List<Offer> findByItemId(String itemId) throws SQLException {
+        String sql = "SELECT id, item_id, name, email, amount, created_at " +
+                "FROM offers WHERE item_id = ? ORDER BY created_at DESC";
+        try (Connection c = Db.getConnection();
+             PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setString(1, itemId);
+            try (ResultSet rs = ps.executeQuery()) {
+                List<Offer> list = new ArrayList<>();
+                while (rs.next()) {
+                    Offer o = new Offer(
+                            rs.getLong("id"),
+                            rs.getString("item_id"),
+                            rs.getString("name"),
+                            rs.getString("email"),
+                            rs.getBigDecimal("amount")
+                    );
+                    list.add(o);
+                }
+                return list;
+            }
+        }
+    }
+
 }

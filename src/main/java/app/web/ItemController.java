@@ -5,6 +5,8 @@ import app.repo.ItemRepository;
 import app.service.ItemService;
 import com.google.gson.Gson;
 
+import java.math.BigDecimal;
+
 import static spark.Spark.*;
 
 public class ItemController {
@@ -15,24 +17,37 @@ public class ItemController {
         this.gson = gson;
         this.service = new ItemService(new ItemRepository());
     }
+    private static BigDecimal parseDecimal(String s) {
+        try { return (s == null || s.isBlank()) ? null : new BigDecimal(s); }
+        catch (NumberFormatException nfe) { return null; }
+    };
 
     public void register() {
-        get("/items", (req, res) -> { res.type("application/json"); return gson.toJson(service.list()); });
-
-        get("/items/:id", (req, res) -> { res.type("application/json"); return gson.toJson(service.get(req.params(":id"))); });
-
         post("/items/:id", (req, res) -> {
             res.type("application/json");
             var dto = gson.fromJson(req.body(), ItemRequestDTO.class);
             var created = service.create(req.params(":id"), dto);
             res.status(201);
+
+            app.realtime.WsEndpoint.broadcastItemCreated(
+                    created.getId(), created.getName(), created.getDescription(),
+                    created.getPrice(), created.getCurrency()
+            );
+
             return gson.toJson(created);
         });
 
         put("/items/:id", (req, res) -> {
             res.type("application/json");
             var dto = gson.fromJson(req.body(), ItemRequestDTO.class);
-            return gson.toJson(service.update(req.params(":id"), dto));
+            var updated = service.update(req.params(":id"), dto);
+
+            app.realtime.WsEndpoint.broadcastItemUpdate(
+                    updated.getId(), updated.getName(), updated.getDescription(),
+                    updated.getPrice(), updated.getCurrency()
+            );
+
+            return gson.toJson(updated);
         });
 
         options("/items/:id", (req, res) -> {
@@ -42,6 +57,31 @@ public class ItemController {
             return "";
         });
 
-        delete("/items/:id", (req, res) -> { service.delete(req.params(":id")); res.status(204); return ""; });
+        delete("/items/:id", (req, res) -> { service.delete(req.params(":id")); res.status(204);
+            app.realtime.WsEndpoint.broadcastItemDeleted(req.params(":id"));
+            return ""; });
+
+        get("/items", (req, res) -> {
+            res.type("application/json");
+            BigDecimal min = parseDecimal(req.queryParams("min_price"));
+            BigDecimal max = parseDecimal(req.queryParams("max_price"));
+            String currency = req.queryParams("currency");
+            String q = req.queryParams("q");
+
+            boolean noFilters =
+                    min == null &&
+                            max == null &&
+                            (currency == null || currency.isBlank()) &&
+                            (q == null || q.isBlank());
+
+            if (noFilters) {
+                return gson.toJson(service.list()); // ALL items
+            }
+            return gson.toJson(service.listFiltered(min, max, currency, q));
+        });
+
+
+
+
     }
 }

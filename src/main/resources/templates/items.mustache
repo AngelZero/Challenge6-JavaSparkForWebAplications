@@ -1,30 +1,52 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <title>Items</title>
-  <link rel="stylesheet" href="/styles.css">
+    <meta charset="utf-8">
+    <title>Items for sale</title>
+    <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
-  <h1>Items for sale</h1>
+<div class="container">
+    <h1>Items for sale</h1>
 
-  <table id="item-list-table">
-    <thead>
-      <tr><th>Name</th><th>Price</th><th>Currency</th></tr>
-    </thead>
-    <tbody>
-    {{#items}}
-      <tr class="list-item">
-        <td>
-          <a class="item-name-link" href="/items/{{id}}">{{name}}</a>
-        </td>
-        <td>{{price}}</td>
-        <td>{{currency}}</td>
-      </tr>
-    {{/items}}
-    </tbody>
-  </table>
+    <div class="form-container">
+        <form id="filter-form" method="GET" action="/ui/items">
+            <div style="display:flex; gap:12px; flex-wrap:wrap;">
+                <input id="min-price" name="min_price" type="number" step="0.01" placeholder="Min price" value="{{min_price}}">
+                <input id="max-price" name="max_price" type="number" step="0.01" placeholder="Max price" value="{{max_price}}">
+                <input id="currency"  name="currency"  type="text"  maxlength="3" placeholder="Currency (e.g., USD, MXN)" value="{{currency}}">
+                <input id="q"         name="q"         type="text"  placeholder="Search name" value="{{q}}">
+                <button class="btn" type="submit">Apply</button>
+            </div>
+        </form>
+    </div>
 
-  <script src="/script.js"></script>
+    <table id="item-list-table">
+        <thead>
+        <tr><th>Name</th><th>Price</th><th>Currency</th><th></th></tr>
+        </thead>
+        <tbody id="item-list">
+        {{#items}}
+            <tr class="list-item" data-id="{{id}}">
+                <td>
+                    <a class="item-name-link" href="/ui/items/{{id}}">
+                        <span id="name-{{id}}">{{name}}</span>
+                    </a>
+                </td>
+                <td><span id="price-{{id}}">{{price}}</span></td>
+                <td><span id="currency-{{id}}">{{currency}}</span></td>
+
+                <td><a class="btn" href="/ui/items/{{id}}">View details</a></td>
+            </tr>
+        {{/items}}
+        {{^items}}
+            <tr><td colspan="4">No items found.</td></tr>
+        {{/items}}
+        </tbody>
+    </table>
+</div>
+
+<script src="/ws.js"></script>
+
 </body>
 </html>
