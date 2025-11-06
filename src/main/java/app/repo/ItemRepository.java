@@ -3,6 +3,7 @@ package app.repo;
 import app.config.Db;
 import app.model.Item;
 
+import java.math.BigDecimal;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -88,4 +89,42 @@ public class ItemRepository {
             return ps.executeUpdate();
         }
     }
+
+    public List<Item> findFiltered(BigDecimal minPrice, BigDecimal maxPrice, String currency, String q) throws SQLException {
+        StringBuilder sql = new StringBuilder(
+                "SELECT id,name,description,price,currency FROM items WHERE 1=1 ");
+        List<Object> params = new ArrayList<>();
+
+        if (minPrice != null) { sql.append("AND price >= ? "); params.add(minPrice); }
+        if (maxPrice != null) { sql.append("AND price <= ? "); params.add(maxPrice); }
+        if (currency != null && !currency.isBlank()) {
+            sql.append("AND UPPER(currency) = ? "); params.add(currency.toUpperCase());
+        }
+        if (q != null && !q.isBlank()) {
+            sql.append("AND UPPER(name) LIKE ? "); params.add("%" + q.toUpperCase() + "%");
+        }
+        sql.append("ORDER BY id");
+
+        try (Connection c = Db.getConnection();
+             PreparedStatement ps = c.prepareStatement(sql.toString())) {
+            for (int i = 0; i < params.size(); i++) {
+                Object p = params.get(i);
+                if (p instanceof BigDecimal bd) { ps.setBigDecimal(i + 1, bd); }
+                else if (p instanceof String s) { ps.setString(i + 1, s); }
+            }
+            try (ResultSet rs = ps.executeQuery()) {
+                List<Item> out = new ArrayList<>();
+                while (rs.next()) {
+                    out.add(new Item(
+                            rs.getString("id"),
+                            rs.getString("name"),
+                            rs.getString("description"),
+                            rs.getBigDecimal("price"),
+                            rs.getString("currency")));
+                }
+                return out;
+            }
+        }
+    }
+
 }

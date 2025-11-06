@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Offers (Live)</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<div class="container">
+    <h1>Offers (Live)</h1>
+    <ul id="offer-list">
+        {{#offers}}
+            <li><strong>{{name}}</strong> offered {{amount}} for {{itemId}}</li>
+        {{/offers}}
+    </ul>
+</div>
+<script src="/ws.js"></script>
+</body>
+</html>
